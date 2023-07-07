@@ -58,7 +58,7 @@ pixel_index(
         std::size_t y,
         std::size_t x)
 {
-    return Image::channels * (x * image.width() + y);
+    return Image::channels * (y * image.width() + x);
 }
 
 // ----------------------------------------------------------------------------
