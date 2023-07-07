@@ -14,9 +14,14 @@ endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(include)
+include_directories(third_party/stb)
 
 set(ARGPARSE_STATIC ON)
 add_subdirectory(third_party/argparse)
+
+set(PNG_EXECUTABLES OFF)
+set(PNG_TESTS OFF)
+add_subdirectory(third_party/libpng)
 
 file(GLOB_RECURSE PROJECT_HEADERS "include/*.h*")
 file(GLOB_RECURSE PROJECT_SOURCES "src/*.c*")
@@ -25,4 +30,5 @@ set(SRC_LIST ${PROJECT_SOURCES} ${PROJECT_HEADERS})
 
 add_executable(${PROJECT_NAME} ${SRC_LIST})
 
-target_link_libraries(${PROJECT_NAME} argparse_static)
+target_link_libraries(${PROJECT_NAME} argparse::argparse_static)
+target_link_libraries(${PROJECT_NAME} png)

@@ -1,3 +1,9 @@
 [submodule "third_party/argparse"]
 	path = third_party/argparse
 	url = https://github.com/rue-ryuzaki/argparse
+[submodule "third_party/stb"]
+	path = third_party/stb
+	url = https://github.com/nothings/stb
+[submodule "third_party/libpng"]
+	path = third_party/libpng
+	url = https://github.com/glennrp/libpng

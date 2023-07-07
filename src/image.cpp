@@ -1,4 +1,357 @@
 #include "image.h"
 
-namespace nui {
-}  // namespace nui
+#include <cstdint>
+#include <cstring>
+#include <iostream>
+#include <limits>
+#include <sstream>
+#include <stdexcept>
+
+#include <png.h>
+
+#define STB_IMAGE_IMPLEMENTATION
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#include <stb_image.h>
+#pragma GCC diagnostic pop
+
+#include "endian.h"
+#include "utils.h"
+
+namespace {
+// ----------------------------------------------------------------------------
+template <class T>
+inline std::shared_ptr<T>
+malloc_shared_array(
+        std::size_t size)
+{
+    return std::shared_ptr<T>(reinterpret_cast<T*>(std::malloc(size)),
+                              [] (T* ptr) { std::free(ptr); });
+}
+
+// ----------------------------------------------------------------------------
+inline std::size_t
+image_memsize(
+        std::size_t width,
+        std::size_t height)
+{
+    std::size_t res = niu::Image::channels;
+    auto _safe_multiply = [&res] (std::size_t value)
+    {
+        if (value > std::numeric_limits<int32_t>::max()
+                || std::numeric_limits<int32_t>::max() / value <= res) {
+            throw std::overflow_error("integer overflow");
+        }
+        res *= value;
+    };
+    _safe_multiply(width);
+    _safe_multiply(height);
+    return res;
+}
+
+// ----------------------------------------------------------------------------
+inline std::string
+_remove_extension(
+        std::string const& path)
+{
+    return path.substr(0, path.find_last_of("."));
+}
+
+// ----------------------------------------------------------------------------
+inline std::string
+_add_extension(
+        std::string const& file,
+        std::string const& ext)
+{
+    auto res = file;
+    if (!utils::_ends_with(res, ext)) {
+        res += ext;
+    }
+    return res;
+}
+
+// ----------------------------------------------------------------------------
+inline bool
+_process_check_file(
+        unsigned char const* data,
+        std::string const& file)
+{
+    if (!data) {
+        std::cerr << "empty image data: " << file << std::endl;
+        return false;
+    }
+    std::string dir = utils::_directory_name(file);
+    if (!dir.empty()
+            && !utils::_is_directory_exists(dir)
+            && !utils::_make_directory(dir)) {
+        std::cerr << "can't create directory for image: " << file << std::endl;
+        return false;
+    }
+    return true;
+}
+
+// ----------------------------------------------------------------------------
+inline bool
+_save_by_libpng(
+        std::string const& file,
+        std::size_t const w,
+        std::size_t const h,
+        std::size_t const channels,
+        unsigned char const* image,
+        bool inverseY)
+{
+    png_structp png_ptr = png_create_write_struct(
+                PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+    if (!png_ptr) {
+        return false;
+    }
+
+    FILE* f = fopen(file.c_str(), "wb");
+    png_infop png_info = png_create_info_struct(png_ptr);
+    if (!f || !png_info || setjmp(png_jmpbuf(png_ptr))) {
+        png_destroy_write_struct(&png_ptr, nullptr);
+        return false;
+    }
+
+    png_init_io(png_ptr, f);
+
+    png_set_IHDR(png_ptr, png_info, static_cast<png_uint_32>(w),
+                 static_cast<png_uint_32>(h), 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
+                 PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+
+    std::size_t const bits = 3;
+
+    unsigned char data[w * h * bits];
+    unsigned char* rows[h];
+
+    for (std::size_t i = 0; i < h; ++i) {
+        rows[inverseY ? i : (h - i - 1)] = data + (i * w * bits);
+        for (std::size_t j = 0; j < w; ++j) {
+            std::size_t i1 = (i * w + j) * bits;
+            std::size_t i2 = (i * w + j) * channels;
+            data[i1    ] = image[i2    ];
+            data[i1 + 1] = image[i2 + 1];
+            data[i1 + 2] = image[i2 + 2];
+        }
+    }
+
+    png_set_rows(png_ptr, png_info, rows);
+    png_write_png(png_ptr, png_info, PNG_TRANSFORM_IDENTITY, nullptr);
+    png_write_end(png_ptr, png_info);
+
+    png_destroy_write_struct(&png_ptr, nullptr);
+
+    fclose(f);
+    return true;
+}
+}  // namespace
+
+namespace niu {
+// ----------------------------------------------------------------------------
+std::istream&
+operator >>(
+        std::istream& os,
+        Color& obj)
+{
+    std::string tmp;
+    os >> tmp;
+    if (tmp.size() != 6 && tmp.size() != 8) {
+        throw std::invalid_argument("invalid Color format");
+    }
+    uint32_t value;
+    std::stringstream ss;
+    ss << std::hex << tmp;
+    ss >> value;
+    if (ss.fail() || !ss.eof()) {
+        throw std::invalid_argument("incorrect Color format");
+    }
+    if (tmp.size() == 6) {
+        value <<= 8;
+        value |= 0xff;
+    }
+    obj.value = ntohl(value);
+    return os;
+}
+
+// -- Image implementation ----------------------------------------------------
+Image::Image()
+    : m_width(),
+      m_height(),
+      m_data(nullptr)
+{
+}
+
+// ----------------------------------------------------------------------------
+Image
+Image::make_image(
+        std::size_t width,
+        std::size_t height)
+{
+    std::size_t const size = image_memsize(width, height);
+    Image res;
+    res.m_width = width;
+    res.m_height = height;
+    res.m_data = malloc_shared_array<unsigned char>(size);
+    memset(res.m_data.get(), 0, size);
+    return res;
+}
+
+// ----------------------------------------------------------------------------
+bool
+Image::load(
+        std::string const& file)
+{
+    int w, h, ch;
+    std::shared_ptr<unsigned char> data(
+                stbi_load(file.c_str(), &w, &h, &ch, 0),
+                [] (unsigned char* ptr) { stbi_image_free(ptr); });
+    if (!data.get()) {
+        std::cerr << "Failed to load image: " << file << std::endl;
+        return false;
+    }
+    if (ch == channels) {
+        m_width = static_cast<std::size_t>(w);
+        m_height = static_cast<std::size_t>(h);
+        m_data = data;
+        return true;
+    } else if (ch == 3) {
+        std::size_t const size = image_memsize(static_cast<std::size_t>(w),
+                                               static_cast<std::size_t>(h));
+        m_width = static_cast<std::size_t>(w);
+        m_height = static_cast<std::size_t>(h);
+        m_data = malloc_shared_array<unsigned char>(size);
+        memset(m_data.get(), 0, size);
+        for (std::size_t i = 0; i < height(); ++i) {
+            for (std::size_t j = 0; j < width(); ++j) {
+                std::size_t const index = (i * width() + j);
+                std::size_t i1 = index * static_cast<std::size_t>(ch);
+                std::size_t i2 = index * channels;
+                for (int c = 0; c < ch; ++c) {
+                    m_data.get()[i1++] = data.get()[i2++];
+                }
+                m_data.get()[i1] = static_cast<unsigned char>(255);
+            }
+        }
+        return true;
+    } else {
+        std::cerr << "Failed to load image: " << file
+                  << ". unsupported image format" << std::endl;
+        return false;
+    }
+}
+
+// ----------------------------------------------------------------------------
+bool
+Image::save(
+        std::string const& file,
+        Format format) const
+{
+    switch (format) {
+        case Format::png :
+            {
+                auto filename = _add_extension(_remove_extension(file), ".png");
+                if (!_process_check_file(m_data.get(), filename)) {
+                    return false;
+                }
+                if (_save_by_libpng(filename, width(), height(), channels, m_data.get(), false)) {
+                    return true;
+                }
+            }
+            return false;
+        default :
+            std::cerr << "Failed to save image: " << file
+                      << ". unsupported image format" << std::endl;
+            return false;
+    }
+}
+
+// ----------------------------------------------------------------------------
+Image
+Image::sub_image(
+        std::size_t x,
+        std::size_t y,
+        std::size_t w,
+        std::size_t h) const
+{
+    std::size_t const size = image_memsize(w, h);
+    if (x + w >= width() || y + h >= height()) {
+        throw std::invalid_argument("invalid sub image parameters");
+    }
+    Image res;
+    res.m_width = w;
+    res.m_height = h;
+    res.m_data = malloc_shared_array<unsigned char>(size);
+    memset(res.m_data.get(), 0, size);
+    for (std::size_t ix = 0; ix < w; ++ix) {
+        for (std::size_t iy = 0; iy < h; ++iy) {
+            std::size_t i1 = channels * (ix + iy * w);
+            std::size_t i2 = channels * ((ix + x) + (iy + y) * m_width);
+            for (std::size_t c = 0; c < channels; ++c) {
+                res.m_data.get()[i1++] = m_data.get()[i2++];
+            }
+        }
+    }
+    return res;
+}
+
+// ----------------------------------------------------------------------------
+void
+Image::inverse_x()
+{
+    for (std::size_t i = 0; i < height(); ++i) {
+        for (std::size_t j = 0; j < width() / 2; ++j) {
+            std::size_t i1 = channels * (i * width() + j);
+            std::size_t i2 = channels * (i * (width() - j - 1) + j);
+            for (std::size_t c = 0; c < channels; ++c) {
+                std::swap(m_data.get()[i1++], m_data.get()[i2++]);
+            }
+        }
+    }
+}
+
+// ----------------------------------------------------------------------------
+void
+Image::inverse_y()
+{
+    for (std::size_t i = 0; i < height() / 2; ++i) {
+        for (std::size_t j = 0; j < width(); ++j) {
+            std::size_t i1 = channels * (i * width() + j);
+            std::size_t i2 = channels * ((height() - i - 1) * width() + j);
+            for (std::size_t c = 0; c < channels; ++c) {
+                std::swap(m_data.get()[i1++], m_data.get()[i2++]);
+            }
+        }
+    }
+}
+
+// ----------------------------------------------------------------------------
+void
+Image::fill(
+        Color color)
+{
+    for (std::size_t i = 0; i < height(); ++i) {
+        for (std::size_t j = 0; j < width(); ++j) {
+            std::size_t index = channels * (i * width() + j);
+            m_data.get()[index++] = color.r;
+            m_data.get()[index++] = color.g;
+            m_data.get()[index++] = color.b;
+            m_data.get()[index++] = color.a;
+        }
+    }
+}
+
+// ----------------------------------------------------------------------------
+std::size_t
+Image::width() const noexcept
+{
+    return m_width;
+}
+
+// ----------------------------------------------------------------------------
+std::size_t
+Image::height() const noexcept
+{
+    return m_height;
+}
+}  // namespace niu
