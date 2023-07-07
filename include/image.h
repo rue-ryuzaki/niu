@@ -7,6 +7,18 @@
 #include <string>
 
 namespace niu {
+// -- Vector2 -----------------------------------------------------------------
+typedef union
+{
+    struct { std::size_t x, y; };
+    struct { std::size_t w, h; };
+} Vector2;
+
+std::istream&
+operator >>(
+        std::istream& os,
+        Vector2& obj);
+
 // -- Color -------------------------------------------------------------------
 typedef union
 {
@@ -62,6 +74,12 @@ public:
 
     void
     inverse_y();
+
+    void
+    set_color(
+            std::size_t x,
+            std::size_t y,
+            Color color);
 
     void
     fill(Color color);

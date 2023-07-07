@@ -14,6 +14,7 @@
 #include <functional>
 #include <string>
 
+namespace niu {
 namespace utils {
 inline bool
 _starts_with(
@@ -156,5 +157,6 @@ _to_lower(
     return str;
 }
 }  // namespace utils
+}  // namespace niu
 
 #endif  // _NIU_UTILS_H_
