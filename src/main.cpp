@@ -29,6 +29,7 @@ main(int argc,
 
     auto parser = argparse::ArgumentParser(argc, argv, envp)
             .description("niu - niu image utility")
+            .allow_abbrev(false)
             .formatter_class(argparse::ArgumentDefaultsHelpFormatter)
             .fromfile_prefix_chars("@")
             .epilog("by rue-ryuzaki (c) 2023");
@@ -40,14 +41,21 @@ main(int argc,
             .add_argument(argparse::Argument("name").help("image name"))
             .add_argument(argparse::Argument("--size").nargs(1).metavar("'W H'")
                             .required(true).help("image size"));
+    subparser.add_parser("pattern")
+            .help("create image from pattern")
+            .add_argument(argparse::Argument("name").help("image name"))
+            .add_argument(argparse::Argument("-m", "--map").action("append")
+                            .nargs(1).metavar("'S RRGGBBAA'").help("symbol to color map"))
+            .add_argument(argparse::Argument("-r", "--row").action("append")
+                            .nargs(1).help("image row"));
     subparser.add_parser("fill")
             .parents(parent)
             .help("fill image")
-            .add_argument(argparse::Argument("color").metavar("RRGGBBAA").help("color value"));
+            .add_argument(argparse::Argument("color").metavar("RRGGBBAA").help("color value in hex"));
     subparser.add_parser("set_color")
             .parents(parent)
             .help("set color at positions in image")
-            .add_argument(argparse::Argument("color").metavar("RRGGBBAA").help("color value"))
+            .add_argument(argparse::Argument("color").metavar("RRGGBBAA").help("color value in hex"))
             .add_argument(argparse::Argument("-p", "--positions").action("append")
                             .nargs(1).metavar("'X Y'").help("position"));
 
@@ -65,6 +73,41 @@ main(int argc,
         auto const size = args.get<niu::Vector2>("size");
 
         auto image = niu::Image::make_image(size.w, size.h);
+
+        if (!image.save(output)) {
+            std::cout << "[FAIL] Can't create file '" << output << "'" << std::endl;
+            return 1;
+        }
+        std::cout << "[ OK ] File '" << output << "' generated" << std::endl;
+        return 0;
+    }
+
+    if (command == "pattern") {
+        auto const output = args.get<std::string>("name");
+        auto const colormap = args.get<std::map<char, niu::Color> >("map");
+        auto const rows = args.get<std::vector<std::string> >("row");
+
+        niu::Vector2 size;
+        size.h = rows.size();
+        size.w = 0;
+        for (auto const& row : rows) {
+            if (size.w < row.size()) {
+                size.w = row.size();
+            }
+        }
+
+        auto image = niu::Image::make_image(size.w, size.h);
+        image.fill(niu::Color{ });
+
+        for (std::size_t y = 0; y < rows.size(); ++y) {
+            for (std::size_t x = 0; x < rows.at(y).size(); ++x) {
+                auto symbol = rows.at(y).at(x);
+                if (symbol != ' ') {
+                    auto color = colormap.at(symbol);
+                    image.set_color(x, y, color);
+                }
+            }
+        }
 
         if (!image.save(output)) {
             std::cout << "[FAIL] Can't create file '" << output << "'" << std::endl;
