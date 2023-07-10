@@ -76,6 +76,13 @@ public:
     inverse_y();
 
     void
+    upscale(std::size_t n);
+
+    Image
+    upscaled(
+            std::size_t n) const;
+
+    void
     set_color(
             std::size_t x,
             std::size_t y,

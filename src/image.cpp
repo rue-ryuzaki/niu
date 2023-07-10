@@ -338,6 +338,41 @@ Image::inverse_y()
 }
 
 // ----------------------------------------------------------------------------
+void
+Image::upscale(
+        std::size_t n)
+{
+    Image res = upscaled(n);
+    std::swap(*this, res);
+}
+
+// ----------------------------------------------------------------------------
+Image
+Image::upscaled(std::size_t n) const
+{
+    std::size_t const size = image_memsize(m_width * n, m_height * n);
+    Image res;
+    res.m_width = m_width * n;
+    res.m_height = m_height * n;
+    res.m_data = malloc_shared_array<unsigned char>(size);
+    memset(res.m_data.get(), 0, size);
+    for (std::size_t ix = 0; ix < width(); ++ix) {
+        for (std::size_t iy = 0; iy < height(); ++iy) {
+            std::size_t index2 = pixel_index(*this, iy, ix);
+            for (std::size_t nx = 0; nx < n; ++nx) {
+                for (std::size_t ny = 0; ny < n; ++ny) {
+                    std::size_t index1 = channels * (ix * n + nx + (iy * n + ny) * res.width());
+                    for (std::size_t c = 0; c < channels; ++c) {
+                        res.m_data.get()[index1 + c] = m_data.get()[index2 + c];
+                    }
+                }
+            }
+        }
+    }
+    return res;
+}
+
+// ----------------------------------------------------------------------------
 void Image::set_color(
         std::size_t x,
         std::size_t y,

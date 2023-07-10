@@ -32,6 +32,7 @@ main(int argc,
             .allow_abbrev(false)
             .formatter_class(argparse::ArgumentDefaultsHelpFormatter)
             .fromfile_prefix_chars("@")
+            .comment_prefix_chars("#")
             .epilog("by rue-ryuzaki (c) 2023");
 
     auto& subparser = parser.add_subparsers()
@@ -48,6 +49,10 @@ main(int argc,
                             .nargs(1).metavar("'S RRGGBBAA'").help("symbol to color map"))
             .add_argument(argparse::Argument("-r", "--row").action("append")
                             .nargs(1).help("image row"));
+    subparser.add_parser("upscale")
+            .parents(parent)
+            .help("upscale image")
+            .add_argument(argparse::Argument("n").help("upscale multiplier"));
     subparser.add_parser("fill")
             .parents(parent)
             .help("fill image")
@@ -132,6 +137,11 @@ main(int argc,
     if (!image.load(input)) {
         std::cerr << "[FAIL] Can't load file '" + input + "' as image" << std::endl;
         return 2;
+    }
+
+    if (command == "upscale") {
+        auto const n = args.get<std::size_t>("n");
+        image.upscale(n);
     }
 
     if (command == "fill") {
