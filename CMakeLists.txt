@@ -16,11 +16,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include_directories(include)
 include_directories(third_party/stb)
 
-set(ARGPARSE_STATIC ON)
+set(ARGPARSE_STATIC ON CACHE BOOL "" FORCE)
 add_subdirectory(third_party/argparse)
 
-set(PNG_EXECUTABLES OFF)
-set(PNG_TESTS OFF)
+set(PNG_EXECUTABLES OFF CACHE BOOL "" FORCE)
+set(PNG_TESTS OFF CACHE BOOL "" FORCE)
 add_subdirectory(third_party/libpng)
 
 file(GLOB_RECURSE PROJECT_HEADERS "include/*.h*")
