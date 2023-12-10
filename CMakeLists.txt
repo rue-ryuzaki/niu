@@ -1,12 +1,14 @@
-cmake_minimum_required(VERSION 3.0)
+if (${CMAKE_VERSION} VERSION_LESS "3.12")
+    cmake_minimum_required(VERSION 3.0)
+else()
+    cmake_minimum_required(VERSION 3.0...3.12)
+endif()
+
+include(cmake/prelude.cmake)
 
 project("niu")
 
-if (MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /EHsc")
-else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wold-style-cast -Wextra -Wundef -Wsign-compare -Wconversion -Wpointer-arith -Weffc++ -Wnon-virtual-dtor")
-endif()
+include(cmake/warnings.cmake)
 
 if (NOT CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD 11)
