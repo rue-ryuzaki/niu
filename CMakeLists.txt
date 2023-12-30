@@ -15,9 +15,6 @@ if (NOT CMAKE_CXX_STANDARD)
 endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include_directories(include)
-include_directories(third_party/stb)
-
 set(ARGPARSE_STATIC ON CACHE BOOL "" FORCE)
 add_subdirectory(third_party/argparse)
 
@@ -31,6 +28,11 @@ file(GLOB_RECURSE PROJECT_SOURCES "src/*.c*")
 set(SRC_LIST ${PROJECT_SOURCES} ${PROJECT_HEADERS})
 
 add_executable(${PROJECT_NAME} ${SRC_LIST})
+
+target_include_directories(
+    ${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(
+    ${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/stb)
 
 target_link_libraries(${PROJECT_NAME} argparse::argparse_static)
 target_link_libraries(${PROJECT_NAME} png)
