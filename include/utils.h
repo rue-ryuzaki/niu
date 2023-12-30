@@ -121,23 +121,6 @@ _replace(
 }
 
 inline std::string
-_replace(
-        std::string const& str,
-        std::function<bool(unsigned char)> func,
-        std::string const& value)
-{
-    std::string res;
-    for (auto c : str) {
-        if (func(static_cast<unsigned char>(c))) {
-            res += value;
-        } else {
-            res += c;
-        }
-    }
-    return res;
-}
-
-inline std::string
 _to_upper(
         std::string str)
 {
