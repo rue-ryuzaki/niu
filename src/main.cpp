@@ -1,5 +1,10 @@
 #include <argparse/argparse_decl.hpp>
 
+#include <cstddef>
+#include <map>
+#include <string>
+#include <vector>
+
 #include "image.h"
 #include "utils.h"
 

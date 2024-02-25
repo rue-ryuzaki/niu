@@ -15,10 +15,23 @@ if (NOT CMAKE_CXX_STANDARD)
 endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# argparse
 set(ARGPARSE_STATIC ON CACHE BOOL "" FORCE)
 add_subdirectory(third_party/argparse)
-
+# zlib
+set(ZLIB_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+add_subdirectory(third_party/zlib)
+set(ZLIB_ROOT third_party/zlib)
+set(ZLIB_LIBRARY zlib)
+if (UNIX)
+    set(ZLIB_INCLUDE_DIR ${zlib_SOURCE_DIR} ${zlib_BINARY_DIR})
+endif()
+# libpng
+set(PNG_BUILD_ZLIB OFF CACHE BOOL "" FORCE)
 set(PNG_EXECUTABLES OFF CACHE BOOL "" FORCE)
+set(SKIP_INSTALL_EXPORT ON)
+set(PNG_SHARED OFF CACHE BOOL "" FORCE)
+set(PNG_STATIC ON CACHE BOOL "" FORCE)
 set(PNG_TESTS OFF CACHE BOOL "" FORCE)
 add_subdirectory(third_party/libpng)
 
@@ -33,6 +46,10 @@ target_include_directories(
     ${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(
     ${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/stb)
+target_include_directories(
+    ${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libpng)
+target_include_directories(
+    ${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/third_party/libpng)
 
 target_link_libraries(${PROJECT_NAME} argparse::argparse_static)
-target_link_libraries(${PROJECT_NAME} png)
+target_link_libraries(${PROJECT_NAME} zlibstatic png_static)
