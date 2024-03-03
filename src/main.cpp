@@ -38,7 +38,7 @@ main(int argc,
             .formatter_class(argparse::ArgumentDefaultsHelpFormatter)
             .fromfile_prefix_chars("@")
             .comment_prefix_chars("#")
-            .epilog("by rue-ryuzaki (c) 2023");
+            .epilog("by rue-ryuzaki (c) 2023-2024");
 
     auto& subparser = parser.add_subparsers()
             .dest("cmd").required(true);
