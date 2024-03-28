@@ -1,10 +1,10 @@
+include(cmake/prelude.cmake)
+
 if (${CMAKE_VERSION} VERSION_LESS "3.12")
     cmake_minimum_required(VERSION 3.0)
 else()
     cmake_minimum_required(VERSION 3.0...3.12)
 endif()
-
-include(cmake/prelude.cmake)
 
 project("niu")
 
@@ -14,6 +14,7 @@ if (NOT CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD 11)
 endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # argparse
 set(ARGPARSE_STATIC ON CACHE BOOL "" FORCE)
