@@ -3,6 +3,11 @@
 
 #include <cstdint>
 
+#undef htonl
+#undef htons
+#undef ntohl
+#undef ntohs
+
 namespace niu {
 // -- endian ------------------------------------------------------------------
 inline bool
