@@ -50,10 +50,10 @@ main(int argc,
     subparser.add_parser("pattern")
             .help("create image from pattern")
             .add_argument(argparse::Argument("name").help("image name"))
-            .add_argument(argparse::Argument("-m", "--map").action("append")
-                            .nargs(1).metavar("'S RRGGBBAA'").help("symbol to color map"))
-            .add_argument(argparse::Argument("-r", "--row").action("append")
-                            .nargs(1).help("image row"));
+            .add_argument(argparse::Argument("-m", "--map").action("append").required(true)
+                            .one_or_more().metavar("'S RRGGBBAA'").help("symbol to color map"))
+            .add_argument(argparse::Argument("-r", "--row").action("append").required(true)
+                            .one_or_more().help("image row"));
     subparser.add_parser("upscale")
             .parents(parent)
             .help("upscale image")
@@ -66,8 +66,8 @@ main(int argc,
             .parents(parent)
             .help("set color at positions in image")
             .add_argument(argparse::Argument("color").metavar("RRGGBBAA").help("color value in hex"))
-            .add_argument(argparse::Argument("-p", "--positions").action("append")
-                            .nargs(1).metavar("'X Y'").help("position"));
+            .add_argument(argparse::Argument("-p", "--positions").action("append").required(true)
+                            .one_or_more().metavar("'X Y'").help("position"));
 
     if (argc == 1) {
         parser.print_help();
