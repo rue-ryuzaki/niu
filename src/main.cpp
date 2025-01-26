@@ -35,6 +35,7 @@ main(int argc,
     auto parser = argparse::ArgumentParser(argc, argv, envp)
             .description("niu - niu image utility")
             .allow_abbrev(false)
+            .suggest_on_error(true)
             .formatter_class(argparse::ArgumentDefaultsHelpFormatter)
             .fromfile_prefix_chars("@")
             .comment_prefix_chars("#")
