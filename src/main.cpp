@@ -52,7 +52,7 @@ main(int argc,
             .help("create image from pattern")
             .add_argument(argparse::Argument("name").help("image name"))
             .add_argument(argparse::Argument("-m", "--map").action("append").required(true)
-                            .one_or_more().metavar("'S RRGGBBAA'").help("symbol to color map"))
+                            .one_or_more().metavar("'S=RRGGBBAA'").help("symbol to color map"))
             .add_argument(argparse::Argument("-r", "--row").action("append").required(true)
                             .one_or_more().help("image row"));
     subparser.add_parser("upscale")
