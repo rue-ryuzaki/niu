@@ -61,6 +61,9 @@ public:
     save(std::string const& file,
             Format format = Format::png) const;
 
+    bool
+    dump(std::string const& file) const;
+
     Image
     sub_image(
             std::size_t x,

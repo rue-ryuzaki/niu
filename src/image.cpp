@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <fstream>
 #include <iostream>
 #include <limits>
 #include <sstream>
@@ -277,6 +278,26 @@ Image::save(
                       << ". unsupported image format" << std::endl;
             return false;
     }
+}
+
+// ----------------------------------------------------------------------------
+bool
+Image::dump(
+        std::string const& file) const
+{
+    std::ofstream out(file);
+    if (out.is_open()) {
+        for (std::size_t y = 0; y < height(); ++y) {
+            for (std::size_t x = 0; x < width(); ++x) {
+                std::size_t index = pixel_index(*this, y, x);
+                for (std::size_t c = 0; c < channels; ++c) {
+                    out << uint32_t(m_data.get()[index + c]) << ",";
+                }
+            }
+        }
+        return true;
+    }
+    return false;
 }
 
 // ----------------------------------------------------------------------------

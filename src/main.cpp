@@ -69,6 +69,9 @@ main(int argc,
             .add_argument(argparse::Argument("color").metavar("RRGGBBAA").help("color value in hex"))
             .add_argument(argparse::Argument("-p", "--positions").action("append").required(true)
                             .one_or_more().metavar("'X Y'").help("position"));
+    subparser.add_parser("dump")
+            .parents(parent)
+            .help("dump image");
 
     if (argc == 1) {
         parser.print_help();
@@ -163,7 +166,12 @@ main(int argc,
         }
     }
 
-    if (!image.save(output)) {
+    if (command == "dump") {
+        if (!image.dump(output)) {
+            std::cout << "[FAIL] Can't dump to file '" << output << "'" << std::endl;
+            return 1;
+        }
+    } else if (!image.save(output)) {
         std::cout << "[FAIL] Can't save file '" << output << "'" << std::endl;
         return 1;
     }
