@@ -123,6 +123,9 @@ save_by_libpng(
     png_infop png_info = png_create_info_struct(png_ptr);
     if (!f || !png_info || setjmp(png_jmpbuf(png_ptr))) {
         png_destroy_write_struct(&png_ptr, nullptr);
+        if (f) {
+            fclose(f);
+        }
         return false;
     }
 
