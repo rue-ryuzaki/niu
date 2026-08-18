@@ -331,6 +331,32 @@ Image::sub_image(
 
 // ----------------------------------------------------------------------------
 void
+Image::merge(
+        Image const& image,
+        Vector2 const& pos)
+{
+    for (std::size_t ix = 0; ix < image.width(); ++ix) {
+        if (ix + pos.x < 0 || ix + pos.x >= width()) {
+            continue;
+        }
+        for (std::size_t iy = 0; iy < image.height(); ++iy) {
+            if (iy + pos.y < 0 || iy + pos.y >= height()) {
+                continue;
+            }
+            if (channels == 4 && image.m_data.get()[channels * (ix + iy * image.width()) + 3] == 0) {
+                continue;
+            }
+            std::size_t i1 = channels * (ix + pos.x + (iy + pos.y) * width());
+            std::size_t i2 = channels * (ix + iy * image.width());
+            for (std::size_t c = 0; c < channels; ++c) {
+                m_data.get()[i1++] = image.m_data.get()[i2++];
+            }
+        }
+    }
+}
+
+// ----------------------------------------------------------------------------
+void
 Image::inverse_x()
 {
     for (std::size_t i = 0; i < height(); ++i) {

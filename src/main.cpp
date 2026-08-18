@@ -59,6 +59,10 @@ main(int argc,
             .parents(parent)
             .help("upscale image")
             .add_argument(argparse::Argument("n").help("upscale multiplier"));
+    subparser.add_parser("merge")
+            .parents(parent)
+            .add_argument(argparse::Argument("-m", "--merge").required(true).help("image to merge"))
+            .add_argument(argparse::Argument("-p", "--position").required(true).help("offset position"));
     subparser.add_parser("fill")
             .parents(parent)
             .help("fill image")
@@ -68,7 +72,7 @@ main(int argc,
             .help("set color at positions in image")
             .add_argument(argparse::Argument("color").metavar("RRGGBBAA").help("color value in hex"))
             .add_argument(argparse::Argument("-p", "--positions").action("append").required(true)
-                            .one_or_more().metavar("'X Y'").help("position"));
+                            .one_or_more().metavar("'X Y'").help("positions"));
     subparser.add_parser("dump")
             .parents(parent)
             .help("dump image");
@@ -166,6 +170,24 @@ main(int argc,
         }
     }
 
+    if (command == "merge") {
+        auto const merge = args.get<std::string>("merge");
+        if (!niu::utils::_is_file_exists(merge)) {
+            std::cerr << "[FAIL] Input file '" + merge + "' not found" << std::endl;
+            return 1;
+        }
+
+        niu::Image image2;
+        if (!image2.load(merge)) {
+            std::cerr << "[FAIL] Can't load file '" + merge + "' as image" << std::endl;
+            return 2;
+        }
+
+        auto const offset = args.get<niu::Vector2>("position");
+
+        image.merge(image2, offset);
+    }
+
     if (command == "dump") {
         if (!image.dump(output)) {
             std::cout << "[FAIL] Can't dump to file '" << output << "'" << std::endl;
@@ -175,6 +197,7 @@ main(int argc,
         std::cout << "[FAIL] Can't save file '" << output << "'" << std::endl;
         return 1;
     }
+
     std::cout << "[ OK ] File '" << output << "' saved" << std::endl;
     return 0;
 }

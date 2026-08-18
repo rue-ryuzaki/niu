@@ -71,6 +71,10 @@ public:
             std::size_t w,
             std::size_t h) const;
 
+    void
+    merge(Image const& image,
+            Vector2 const& offset);
+
     // -- modifications -------------------------------------------------------
     void
     inverse_x();
